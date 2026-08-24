@@ -1,0 +1,28 @@
+FIREBASE
+[ ] Email/Password enabled
+[ ] Admin user: shahinawab1814@gmail.com
+[ ] Firestore Production mode
+[ ] firestore.rules published
+[ ] Vercel hostname added to Authentication Authorized domains
+
+GITHUB
+[ ] Upload all project files
+[ ] Do NOT upload service-account/private-key JSON
+
+VERCEL
+[ ] Import repository
+[ ] Framework: Other
+[ ] Build: blank
+[ ] Output: .
+[ ] Deploy
+
+TEST
+[ ] Public feed loads
+[ ] Submit test confession
+[ ] Public shows Anonymous Persona
+[ ] Public does not show name/email
+[ ] /admin.html login works
+[ ] Admin sees private details
+[ ] CSV works
+[ ] Comments work
+[ ] Reactions work

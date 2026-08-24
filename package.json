@@ -1,0 +1,7 @@
+{
+  "name": "whispervault",
+  "private": true,
+  "version": "1.0.0",
+  "description": "WhisperVault anonymous confession app",
+  "scripts": {"build":"echo Static Vercel deployment - no build required"}
+}

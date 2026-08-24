@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == "shahinawab1814@gmail.com";
+    }
+
+    match /publicPosts/{postId} {
+      allow read: if resource.data.status == "approved";
+      allow create: if request.resource.data.status == "approved"
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 10000
+        && request.resource.data.category is string
+        && request.resource.data.mood is string
+        && request.resource.data.theme is string;
+      allow update, delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved";
+        allow create: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved"
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500;
+        allow update, delete: if isAdmin();
+      }
+
+      match /reactions/{reactionId} {
+        allow read: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved";
+        allow create: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved"
+          && request.resource.data.type in ["meToo", "love", "shocked", "fire"];
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /privateSubmissions/{submissionId} {
+      allow create: if request.resource.data.postId == submissionId
+        && request.resource.data.realName is string
+        && request.resource.data.realName.size() > 0
+        && request.resource.data.realName.size() <= 200
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 3
+        && request.resource.data.email.size() <= 320
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 10000
+        && request.resource.data.category is string
+        && request.resource.data.mood is string
+        && request.resource.data.theme is string;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
