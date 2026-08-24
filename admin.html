@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>WhisperVault — Creator Dashboard</title>
+
+  <meta
+    name="description"
+    content="WhisperVault private creator dashboard."
+  />
+
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #141416;
+      --panel2: #1b1b20;
+      --border: #29292f;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(
+          circle at 15% 0%,
+          rgba(139,92,246,.14),
+          transparent 30%
+        ),
+        radial-gradient(
+          circle at 85% 10%,
+          rgba(236,72,153,.09),
+          transparent 30%
+        ),
+        var(--bg);
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =====================================================
+       LOGIN
+       ===================================================== */
+
+    #loginScreen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+    }
+
+    .login-card {
+      width: min(440px, 100%);
+      background: rgba(20,20,22,.95);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(
+          135deg,
+          var(--purple),
+          var(--pink)
+        );
+      font-size: 23px;
+      margin-bottom: 20px;
+    }
+
+    .login-card h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -.04em;
+    }
+
+    .login-card p {
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .field {
+      margin-top: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #d4d4d8;
+      margin-bottom: 7px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0d0d10;
+      color: white;
+      border-radius: 11px;
+      padding: 12px 13px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(139,92,246,.7);
+      box-shadow:
+        0 0 0 3px rgba(139,92,246,.1);
+    }
+
+    .primary {
+      width: 100%;
+      margin-top: 20px;
+      border: 0;
+      color: white;
+      font-weight: 800;
+      padding: 13px 16px;
+      border-radius: 11px;
+      background:
+        linear-gradient(
+          135deg,
+          var(--purple),
+          var(--pink)
+        );
+    }
+
+    .secondary {
+      border: 1px solid var(--border);
+      color: white;
+      background: rgba(255,255,255,.04);
+      border-radius: 10px;
+      padding: 10px 13px;
+    }
+
+    .login-error {
+      margin-top: 14px;
+      color: #fca5a5;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .login-note {
+      margin-top: 18px;
+      padding: 12px;
+      border: 1px solid rgba(34,197,94,.18);
+      background: rgba(34,197,94,.05);
+      color: #d1fae5;
+      border-radius: 11px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    /* =====================================================
+       DASHBOARD
+       ===================================================== */
+
+    #dashboard {
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(18px);
+      background: rgba(9,9,11,.84);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .nav {
+      width: min(1250px, calc(100% - 30px));
+      min-height: 70px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 37px;
+      height: 37px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(
+          135deg,
+          var(--purple),
+          var(--pink)
+        );
+    }
+
+    .brand-title {
+      font-weight: 800;
+    }
+
+    .brand-subtitle {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .admin-email {
+      color: #d4d4d8;
+      font-size: 11px;
+    }
+
+    .logout {
+      border: 1px solid rgba(239,68,68,.3);
+      background: rgba(239,68,68,.06);
+      color: #fca5a5;
+      padding: 8px 12px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+
+    .page {
+      width: min(1250px, calc(100% - 30px));
+      margin: auto;
+      padding: 35px 0 70px;
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    .page-heading h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: -.045em;
+    }
+
+    .page-heading p {
+      color: var(--muted);
+      margin: 8px 0 0;
+      font-size: 13px;
+    }
+
+    .refresh-btn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+
+    /* =====================================================
+       STATS
+       ===================================================== */
+
+    .stats {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 13px;
+      margin-bottom: 25px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      margin-top: 7px;
+    }
+
+    /* =====================================================
+       CONTROLS
+       ===================================================== */
+
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 15px;
+      display: grid;
+      grid-template-columns:
+        minmax(220px, 1fr)
+        180px
+        180px;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    /* =====================================================
+       SUBMISSIONS
+       ===================================================== */
+
+    .submission-list {
+      display: grid;
+      gap: 13px;
+    }
+
+    .submission {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .submission-header {
+      padding: 17px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .submission-id {
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace;
+      color: #c4b5fd;
+      font-size: 10px;
+      word-break: break-all;
+    }
+
+    .submission-date {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 5px;
+    }
+
+    .badge {
+      display: inline-flex;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      border: 1px solid var(--border);
+      color: #d4d4d8;
+      background: rgba(255,255,255,.03);
+      white-space: nowrap;
+    }
+
+    .submission-body {
+      padding: 18px;
+    }
+
+    .identity {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .identity-box {
+      border: 1px solid rgba(239,68,68,.14);
+      background: rgba(239,68,68,.035);
+      border-radius: 11px;
+      padding: 11px;
+    }
+
+    .identity-label {
+      color: #a1a1aa;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 5px;
+    }
+
+    .identity-value {
+      color: #fff;
+      font-size: 13px;
+      word-break: break-word;
+    }
+
+    .story-section {
+      border: 1px solid var(--border);
+      background: #0e0e11;
+      border-radius: 13px;
+      padding: 15px;
+    }
+
+    .story-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .story-heading strong {
+      font-size: 12px;
+    }
+
+    .story-text {
+      color: #e4e4e7;
+      white-space: pre-wrap;
+      line-height: 1.75;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .meta {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 13px;
+    }
+
+    .meta span {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.035);
+      color: #c4c4c8;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+    }
+
+    .submission-footer {
+      padding: 13px 18px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .persona {
+      color: #d8b4fe;
+      font-size: 11px;
+    }
+
+    .delete-btn {
+      border: 1px solid rgba(239,68,68,.25);
+      background: rgba(239,68,68,.05);
+      color: #fca5a5;
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-size: 11px;
+    }
+
+    .empty {
+      padding: 55px 20px;
+      text-align: center;
+      border: 1px dashed #3f3f46;
+      border-radius: 17px;
+      color: var(--muted);
+    }
+
+    .loading {
+      padding: 45px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* =====================================================
+       MODAL
+       ===================================================== */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(7px);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(600px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #151518;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 23px;
+      box-shadow: var(--shadow);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .close {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 25px;
+    }
+
+    .warning {
+      border: 1px solid rgba(234,179,8,.18);
+      background: rgba(234,179,8,.05);
+      color: #fef3c7;
+      border-radius: 11px;
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.6;
+      margin-bottom: 17px;
+    }
+
+    /* =====================================================
+       TOAST
+       ===================================================== */
+
+    .toast-container {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1000;
+      display: grid;
+      gap: 8px;
+      width: min(380px, calc(100% - 36px));
+    }
+
+    .toast {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 11px;
+      padding: 12px 14px;
+      color: white;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: var(--shadow);
+    }
+
+    .toast.error {
+      border-color: rgba(239,68,68,.4);
+    }
+
+    .toast.success {
+      border-color: rgba(34,197,94,.4);
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 900px) {
+
+      .stats {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .controls input {
+        grid-column: 1 / -1;
+      }
+
+    }
+
+    @media (max-width: 620px) {
+
+      .nav {
+        align-items: flex-start;
+        padding: 12px 0;
+        flex-direction: column;
+      }
+
+      .nav-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .controls input {
+        grid-column: auto;
+      }
+
+      .identity {
+        grid-template-columns: 1fr;
+      }
+
+      .page-heading h1 {
+        font-size: 28px;
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ==========================================================
+     LOGIN SCREEN
+     ========================================================== -->
+
+<section id="loginScreen">
+
+  <div class="login-card">
+
+    <div class="logo">✦</div>
+
+    <h1>Creator Dashboard</h1>
+
+    <p>
+      This area is private. Sign in with the authorized
+      WhisperVault creator account to view submission details.
+    </p>
+
+    <form id="loginForm">
+
+      <div class="field">
+
+        <label for="loginEmail">
+          Creator email
+        </label>
+
+        <input
+          id="loginEmail"
+          type="email"
+          value=""
+          autocomplete="email"
+          placeholder="creator@example.com"
+          required
+        />
+
+      </div>
+
+      <div class="field">
+
+        <label for="loginPassword">
+          Password
+        </label>
+
+        <input
+          id="loginPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Firebase account password"
+          required
+        />
+
+      </div>
+
+      <button
+        id="loginButton"
+        class="primary"
+        type="submit"
+      >
+        Sign in
+      </button>
+
+      <div
+        id="loginError"
+        class="login-error hidden"
+      ></div>
+
+    </form>
+
+    <div class="login-note">
+      🔒 Only the authorized creator account can access
+      private names, email addresses and original submissions.
+      These details are not displayed publicly.
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ==========================================================
+     DASHBOARD
+     ========================================================== -->
+
+<section id="dashboard" class="hidden">
+
+  <header>
+
+    <div class="nav">
+
+      <a href="/" class="brand">
+
+        <div class="brand-icon">
+          ✦
+        </div>
+
+        <div>
+          <div class="brand-title">
+            WhisperVault
+          </div>
+
+          <div class="brand-subtitle">
+            Private Creator Dashboard
+          </div>
+        </div>
+
+      </a>
+
+
+      <div class="nav-right">
+
+        <span
+          id="adminEmail"
+          class="admin-email"
+        ></span>
+
+        <a
+          href="/"
+          class="secondary"
+        >
+          Public Feed
+        </a>
+
+        <button
+          id="logoutButton"
+          class="logout"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <main class="page">
+
+    <div class="page-heading">
+
+      <div>
+
+        <h1>Submissions</h1>
+
+        <p>
+          Private creator view. Public visitors never see
+          these identifying details.
+        </p>
+
+      </div>
+
+      <button
+        id="refreshButton"
+        class="refresh-btn"
+        type="button"
+      >
+        ↻ Refresh
+      </button>
+
+    </div>
+
+
+    <!-- ======================================================
+         STATS
+         ====================================================== -->
+
+    <div class="stats">
+
+      <div class="stat">
+
+        <div class="stat-label">
+          Total submissions
+        </div>
+
+        <div
+          id="totalCount"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+
+      <div class="stat">
+
+        <div class="stat-label">
+          Today
+        </div>
+
+        <div
+          id="todayCount"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+
+      <div class="stat">
+
+        <div class="stat-label">
+          Categories
+        </div>
+
+        <div
+          id="categoryCount"
+          class="stat-value"
+        >
+          0
+        </div>
+
+      </div>
+
+
+      <div class="stat">
+
+        <div class="stat-label">
+          Latest
+        </div>
+
+        <div
+          id="latestCount"
+          class="stat-value"
+        >
+          —
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         CONTROLS
+         ====================================================== -->
+
+    <div class="controls">
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Search name, email, story, category..."
+      />
+
+      <select id="categoryFilter">
+
+        <option value="all">
+          All categories
+        </option>
+
+        <option value="Confession">
+          Confession
+        </option>
+
+        <option value="Love">
+          Love
+        </option>
+
+        <option value="Relationships">
+          Relationships
+        </option>
+
+        <option value="Family">
+          Family
+        </option>
+
+        <option value="Friendship">
+          Friendship
+        </option>
+
+        <option value="Work">
+          Work
+        </option>
+
+        <option value="College">
+          College
+        </option>
+
+        <option value="Life">
+          Life
+        </option>
+
+        <option value="Secret">
+          Secret
+        </option>
+
+        <option value="Other">
+          Other
+        </option>
+
+      </select>
+
+
+      <select id="sortFilter">
+
+        <option value="newest">
+          Newest first
+        </option>
+
+        <option value="oldest">
+          Oldest first
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <!-- ======================================================
+         SUBMISSIONS
+         ====================================================== -->
+
+    <div
+      id="submissionList"
+      class="submission-list"
+    >
+
+      <div class="loading">
+        Loading private submissions...
+      </div>
+
+    </div>
+
+  </main>
+
+</section>
+
+
+<!-- ==========================================================
+     STORY MODAL
+     ========================================================== -->
+
+<div
+  id="storyModal"
+  class="modal-backdrop"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <h2>
+        Full Submission
+      </h2>
+
+      <button
+        class="close"
+        type="button"
+        onclick="closeModal()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="warning">
+
+      🔒 You are viewing private creator information.
+      Do not share or expose the submitter's identifying
+      information publicly.
+
+    </div>
+
+
+    <div id="modalContent"></div>
+
+  </div>
+
+</div>
+
+
+<!-- ==========================================================
+     TOAST
+     ========================================================== -->
+
+<div
+  id="toastContainer"
+  class="toast-container"
+></div>
+
+
+<script>
+
+/* ============================================================
+   FIREBASE CONFIG
+   ============================================================ */
+
+const firebaseConfig = {
+
+  apiKey:
+    "AIzaSyAkEnauvyGiGTgtYdPpwmeD3Rq9JObYquc",
+
+  authDomain:
+    "whispervault-3588e.firebaseapp.com",
+
+  projectId:
+    "whispervault-3588e",
+
+  storageBucket:
+    "whispervault-3588e.firebasestorage.app",
+
+  messagingSenderId:
+    "368750141209",
+
+  appId:
+    "1:368750141209:web:652a04a44149d12a616f88",
+
+  measurementId:
+    "G-G247RKBEQT"
+
+};
+
+
+/* ============================================================
+   FIREBASE INITIALIZATION
+   ============================================================ */
+
+firebase.initializeApp(firebaseConfig);
+
+const auth =
+  firebase.auth();
+
+const db =
+  firebase.firestore();
+
+
+/* ============================================================
+   AUTHORIZED CREATOR
+   ============================================================ */
+
+const ADMIN_EMAIL =
+  "shahinawab1814@gmail.com";
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let currentUser = null;
+
+let allSubmissions = [];
+
+
+/* ============================================================
+   DOM
+   ============================================================ */
+
+const loginScreen =
+  document.getElementById(
+    "loginScreen"
+  );
+
+const dashboard =
+  document.getElementById(
+    "dashboard"
+  );
+
+const loginForm =
+  document.getElementById(
+    "loginForm"
+  );
+
+const loginEmail =
+  document.getElementById(
+    "loginEmail"
+  );
+
+const loginPassword =
+  document.getElementById(
+    "loginPassword"
+  );
+
+const loginButton =
+  document.getElementById(
+    "loginButton"
+  );
+
+const loginError =
+  document.getElementById(
+    "loginError"
+  );
+
+const adminEmail =
+  document.getElementById(
+    "adminEmail"
+  );
+
+const submissionList =
+  document.getElementById(
+    "submissionList"
+  );
+
+const searchInput =
+  document.getElementById(
+    "searchInput"
+  );
+
+const categoryFilter =
+  document.getElementById(
+    "categoryFilter"
+  );
+
+const sortFilter =
+  document.getElementById(
+    "sortFilter"
+  );
+
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+
+function escapeHTML(value) {
+
+  const div =
+    document.createElement("div");
+
+  div.textContent =
+    value == null
+      ? ""
+      : String(value);
+
+  return div.innerHTML;
+
+}
+
+
+function showToast(
+  message,
+  type = ""
+) {
+
+  const container =
+    document.getElementById(
+      "toastContainer"
+    );
+
+  const toast =
+    document.createElement("div");
+
+  toast.className =
+    "toast " + type;
+
+  toast.textContent =
+    message;
+
+  container.appendChild(
+    toast
+  );
+
+  setTimeout(
+    () => toast.remove(),
+    4000
+  );
+
+}
+
+
+function getDate(
+  timestamp
+) {
+
+  if (!timestamp) {
+    return null;
+  }
+
+  try {
+
+    if (
+      typeof timestamp.toDate ===
+      "function"
+    ) {
+
+      return timestamp.toDate();
+
+    }
+
+    const date =
+      new Date(timestamp);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return null;
+
+    }
+
+    return date;
+
+  } catch (error) {
+
+    return null;
+
+  }
+
+}
+
+
+function formatDate(
+  timestamp
+) {
+
+  const date =
+    getDate(timestamp);
+
+  if (!date) {
+    return "Unknown date";
+  }
+
+  return date.toLocaleString(
+    undefined,
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
+function isToday(
+  timestamp
+) {
+
+  const date =
+    getDate(timestamp);
+
+  if (!date) {
+    return false;
+  }
+
+  const now =
+    new Date();
+
+  return (
+    date.getFullYear() ===
+      now.getFullYear() &&
+
+    date.getMonth() ===
+      now.getMonth() &&
+
+    date.getDate() ===
+      now.getDate()
+  );
+
+}
+
+
+/* ============================================================
+   AUTHENTICATION STATE
+   ============================================================ */
+
+auth.onAuthStateChanged(
+  async user => {
+
+    if (!user) {
+
+      currentUser =
+        null;
+
+      showLogin();
+
+      return;
+
+    }
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Firebase authentication alone is not enough.
+     *
+     * We also verify the email against the
+     * specific authorized creator account.
+     */
+
+    if (
+      !user.email ||
+      user.email.toLowerCase() !==
+        ADMIN_EMAIL.toLowerCase()
+    ) {
+
+      await auth.signOut();
+
+      showLogin();
+
+      showLoginError(
+        "This account is not authorized to access the creator dashboard."
+      );
+
+      return;
+
+    }
+
+
+    currentUser =
+      user;
+
+    showDashboard();
+
+    await loadSubmissions();
+
+  }
+);
+
+
+/* ============================================================
+   SHOW LOGIN
+   ============================================================ */
+
+function showLogin() {
+
+  loginScreen.classList.remove(
+    "hidden"
+  );
+
+  dashboard.classList.add(
+    "hidden"
+  );
+
+}
+
+
+/* ============================================================
+   SHOW DASHBOARD
+   ============================================================ */
+
+function showDashboard() {
+
+  loginScreen.classList.add(
+    "hidden"
+  );
+
+  dashboard.classList.remove(
+    "hidden"
+  );
+
+
+  adminEmail.textContent =
+    currentUser.email;
+
+}
+
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+
+loginForm.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    hideLoginError();
+
+    const email =
+      loginEmail.value
+        .trim()
+        .toLowerCase();
+
+    const password =
+      loginPassword.value;
+
+
+    if (
+      email !==
+      ADMIN_EMAIL.toLowerCase()
+    ) {
+
+      showLoginError(
+        "Only the authorized creator account can sign in."
+      );
+
+      return;
+
+    }
+
+
+    loginButton.disabled =
+      true;
+
+    loginButton.textContent =
+      "Signing in...";
+
+
+    try {
+
+      await auth.signInWithEmailAndPassword(
+        email,
+        password
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Login error:",
+        error
+      );
+
+
+      let message =
+        "Unable to sign in.";
+
+
+      if (
+        error.code ===
+        "auth/invalid-credential"
+      ) {
+
+        message =
+          "Incorrect email or password.";
+
+      } else if (
+        error.code ===
+        "auth/user-not-found"
+      ) {
+
+        message =
+          "Creator account was not found.";
+
+      } else if (
+        error.code ===
+        "auth/wrong-password"
+      ) {
+
+        message =
+          "Incorrect password.";
+
+      } else if (
+        error.code ===
+        "auth/too-many-requests"
+      ) {
+
+        message =
+          "Too many attempts. Please try again later.";
+
+      }
+
+
+      showLoginError(
+        message
+      );
+
+
+    } finally {
+
+      loginButton.disabled =
+        false;
+
+      loginButton.textContent =
+        "Sign in";
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   LOGIN ERROR
+   ============================================================ */
+
+function showLoginError(
+  message
+) {
+
+  loginError.textContent =
+    message;
+
+  loginError.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function hideLoginError() {
+
+  loginError.textContent =
+    "";
+
+  loginError.classList.add(
+    "hidden"
+  );
+
+}
+
+
+/* ============================================================
+   LOGOUT
+   ============================================================ */
+
+document
+  .getElementById("logoutButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      try {
+
+        await auth.signOut();
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+      }
+
+    }
+  );
+
+
+/* ============================================================
+   LOAD PRIVATE SUBMISSIONS
+   ============================================================ */
+
+async function loadSubmissions() {
+
+  if (!currentUser) {
+    return;
+  }
+
+
+  submissionList.innerHTML = `
+    <div class="loading">
+      Loading private submissions...
+    </div>
+  `;
+
+
+  try {
+
+    /*
+     * Only the authenticated admin can read
+     * this collection because Firestore rules
+     * explicitly require isAdmin().
+     */
+
+    const snapshot =
+      await db
+        .collection(
+          "privateSubmissions"
+        )
+        .orderBy(
+          "createdAt",
+          "desc"
+        )
+        .limit(500)
+        .get();
+
+
+    allSubmissions =
+      snapshot.docs.map(
+        doc => {
+
+          return {
+            id: doc.id,
+            ...doc.data()
+          };
+
+        }
+      );
+
+
+    updateStats();
+
+    renderSubmissions();
+
+
+  } catch (error) {
+
+    console.error(
+      "Submission loading error:",
+      error
+    );
+
+
+    if (
+      error.code ===
+      "permission-denied"
+    ) {
+
+      submissionList.innerHTML = `
+        <div class="empty">
+          <strong>Access denied.</strong>
+          <br><br>
+          Your Firebase account is not authorized
+          to read private submissions.
+        </div>
+      `;
+
+    } else {
+
+      submissionList.innerHTML = `
+        <div class="empty">
+          <strong>Could not load submissions.</strong>
+          <br><br>
+          ${escapeHTML(
+            error.message ||
+            "Unknown Firebase error."
+          )}
+        </div>
+      `;
+
+    }
+
+  }
+
+}
+
+
+/* ============================================================
+   UPDATE STATISTICS
+   ============================================================ */
+
+function updateStats() {
+
+  const total =
+    allSubmissions.length;
+
+
+  const today =
+    allSubmissions.filter(
+      submission =>
+        isToday(
+          submission.createdAt
+        )
+    ).length;
+
+
+  const categories =
+    new Set(
+      allSubmissions
+        .map(
+          item =>
+            item.category
+        )
+        .filter(Boolean)
+    );
+
+
+  const latest =
+    allSubmissions.length
+      ? formatDate(
+          allSubmissions[0]
+            .createdAt
+        )
+      : "—";
+
+
+  document.getElementById(
+    "totalCount"
+  ).textContent =
+    total;
+
+
+  document.getElementById(
+    "todayCount"
+  ).textContent =
+    today;
+
+
+  document.getElementById(
+    "categoryCount"
+  ).textContent =
+    categories.size;
+
+
+  document.getElementById(
+    "latestCount"
+  ).textContent =
+    latest === "—"
+      ? "—"
+      : latest.split(",")[0];
+
+}
+
+
+/* ============================================================
+   FILTER SUBMISSIONS
+   ============================================================ */
+
+function getFilteredSubmissions() {
+
+  const search =
+    searchInput.value
+      .trim()
+      .toLowerCase();
+
+
+  const category =
+    categoryFilter.value;
+
+
+  const sort =
+    sortFilter.value;
+
+
+  let result =
+    allSubmissions.filter(
+      submission => {
+
+        const searchable = [
+          submission.realName,
+          submission.email,
+          submission.text,
+          submission.category,
+          submission.mood,
+          submission.anonymousPersona,
+          submission.submissionId,
+          submission.postId
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+
+        const matchesSearch =
+          !search ||
+          searchable.includes(
+            search
+          );
+
+
+        const matchesCategory =
+          category === "all" ||
+          submission.category ===
+            category;
+
+
+        return (
+          matchesSearch &&
+          matchesCategory
+        );
+
+      }
+    );
+
+
+  result.sort(
+    (a, b) => {
+
+      const dateA =
+        getDate(a.createdAt)
+          ?.getTime() || 0;
+
+      const dateB =
+        getDate(b.createdAt)
+          ?.getTime() || 0;
+
+
+      return sort === "oldest"
+        ? dateA - dateB
+        : dateB - dateA;
+
+    }
+  );
+
+
+  return result;
+
+}
+
+
+/* ============================================================
+   RENDER SUBMISSIONS
+   ============================================================ */
+
+function renderSubmissions() {
+
+  const submissions =
+    getFilteredSubmissions();
+
+
+  if (!submissions.length) {
+
+    submissionList.innerHTML = `
+      <div class="empty">
+
+        <div style="font-size:32px;margin-bottom:12px;">
+          🔐
+        </div>
+
+        <strong>
+          No submissions found.
+        </strong>
+
+        <br><br>
+
+        <span>
+          Try changing your search or filter.
+        </span>
+
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  submissionList.innerHTML =
+    submissions
+      .map(
+        renderSubmission
+      )
+      .join("");
+
+}
+
+
+/* ============================================================
+   RENDER SINGLE SUBMISSION
+   ============================================================ */
+
+function renderSubmission(
+  submission
+) {
+
+  const id =
+    escapeHTML(
+      submission.id
+    );
+
+
+  const realName =
+    escapeHTML(
+      submission.realName ||
+      "Not provided"
+    );
+
+
+  const email =
+    escapeHTML(
+      submission.email ||
+      "Not provided"
+    );
+
+
+  const text =
+    escapeHTML(
+      submission.text ||
+      ""
+    );
+
+
+  const category =
+    escapeHTML(
+      submission.category ||
+      "Other"
+    );
+
+
+  const mood =
+    escapeHTML(
+      submission.mood ||
+      "Unknown"
+    );
+
+
+  const persona =
+    escapeHTML(
+      submission.anonymousPersona ||
+      "Anonymous"
+    );
+
+
+  const date =
+    escapeHTML(
+      formatDate(
+        submission.createdAt
+      )
+    );
+
+
+  return `
+    <article
+      class="submission"
+      data-id="${id}"
+    >
+
+      <div class="submission-header">
+
+        <div>
+
+          <div class="submission-id">
+            Submission ID:
+            ${id}
+          </div>
+
+          <div class="submission-date">
+            ${date}
+          </div>
+
+        </div>
+
+        <span class="badge">
+          ${category}
+        </span>
+
+      </div>
+
+
+      <div class="submission-body">
+
+        <!-- PRIVATE IDENTITY -->
+
+        <div class="identity">
+
+          <div class="identity-box">
+
+            <div class="identity-label">
+              Real Name — Private
+            </div>
+
+            <div class="identity-value">
+              ${realName}
+            </div>
+
+          </div>
+
+
+          <div class="identity-box">
+
+            <div class="identity-label">
+              Email — Private
+            </div>
+
+            <div class="identity-value">
+              ${email}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- STORY -->
+
+        <div class="story-section">
+
+          <div class="story-heading">
+
+            <strong>
+              Complete Story
+            </strong>
+
+            <button
+              class="secondary"
+              type="button"
+              onclick="openSubmission('${id}')"
+            >
+              View
+            </button>
+
+          </div>
+
+
+          <div class="story-text">
+            ${text}
+          </div>
+
+
+          <div class="meta">
+
+            <span>
+              Category: ${category}
+            </span>
+
+            <span>
+              Mood: ${mood}
+            </span>
+
+            <span>
+              Public persona: ${persona}
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="submission-footer">
+
+        <div class="persona">
+          Public identity:
+          ${persona}
+        </div>
+
+        <button
+          class="delete-btn"
+          type="button"
+          onclick="deleteSubmission('${id}')"
+        >
+          Delete
+        </button>
+
+      </div>
+
+    </article>
+  `;
+
+}
+
+
+/* ============================================================
+   SEARCH EVENTS
+   ============================================================ */
+
+searchInput.addEventListener(
+  "input",
+  renderSubmissions
+);
+
+
+categoryFilter.addEventListener(
+  "change",
+  renderSubmissions
+);
+
+
+sortFilter.addEventListener(
+  "change",
+  renderSubmissions
+);
+
+
+/* ============================================================
+   REFRESH
+   ============================================================ */
+
+document
+  .getElementById("refreshButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      await loadSubmissions();
+
+      showToast(
+        "Dashboard refreshed.",
+        "success"
+      );
+
+    }
+  );
+
+
+/* ============================================================
+   OPEN SUBMISSION MODAL
+   ============================================================ */
+
+function openSubmission(
+  submissionId
+) {
+
+  const submission =
+    allSubmissions.find(
+      item =>
+        item.id ===
+        submissionId
+    );
+
+
+  if (!submission) {
+    return;
+  }
+
+
+  const modal =
+    document.getElementById(
+      "storyModal"
+    );
+
+  const content =
+    document.getElementById(
+      "modalContent"
+    );
+
+
+  content.innerHTML = `
+
+    <div class="identity">
+
+      <div class="identity-box">
+
+        <div class="identity-label">
+          Real Name
+        </div>
+
+        <div class="identity-value">
+          ${escapeHTML(
+            submission.realName ||
+            ""
+          )}
+        </div>
+
+      </div>
+
+
+      <div class="identity-box">
+
+        <div class="identity-label">
+          Email
+        </div>
+
+        <div class="identity-value">
+          ${escapeHTML(
+            submission.email ||
+            ""
+          )}
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="story-section">
+
+      <div class="story-heading">
+        <strong>
+          Complete Story
+        </strong>
+      </div>
+
+      <div class="story-text">
+        ${escapeHTML(
+          submission.text ||
+          ""
+        )}
+      </div>
+
+      <div class="meta">
+
+        <span>
+          Category:
+          ${escapeHTML(
+            submission.category ||
+            ""
+          )}
+        </span>
+
+        <span>
+          Mood:
+          ${escapeHTML(
+            submission.mood ||
+            ""
+          )}
+        </span>
+
+        <span>
+          Persona:
+          ${escapeHTML(
+            submission.anonymousPersona ||
+            ""
+          )}
+        </span>
+
+        <span>
+          Date:
+          ${escapeHTML(
+            formatDate(
+              submission.createdAt
+            )
+          )}
+        </span>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  modal.classList.add(
+    "show"
+  );
+
+}
+
+
+function closeModal() {
+
+  document
+    .getElementById(
+      "storyModal"
+    )
+    .classList.remove(
+      "show"
+    );
+
+}
+
+
+document
+  .getElementById("storyModal")
+  .addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.id ===
+        "storyModal"
+      ) {
+
+        closeModal();
+
+      }
+
+    }
+  );
+
+
+/* ============================================================
+   DELETE SUBMISSION
+   ============================================================ */
+
+async function deleteSubmission(
+  submissionId
+) {
+
+  if (!currentUser) {
+    return;
+  }
+
+
+  const submission =
+    allSubmissions.find(
+      item =>
+        item.id ===
+        submissionId
+    );
+
+
+  if (!submission) {
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      "Delete this private submission?\n\n" +
+      "This will permanently remove the private record.\n\n" +
+      "The corresponding public post will also be removed."
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    /*
+     * Delete private record.
+     */
+
+    await db
+      .collection(
+        "privateSubmissions"
+      )
+      .doc(submissionId)
+      .delete();
+
+
+    /*
+     * Delete corresponding public post.
+     */
+
+    if (
+      submission.postId
+    ) {
+
+      await db
+        .collection(
+          "publicPosts"
+        )
+        .doc(
+          submission.postId
+        )
+        .delete();
+
+    }
+
+
+    allSubmissions =
+      allSubmissions.filter(
+        item =>
+          item.id !==
+          submissionId
+      );
+
+
+    updateStats();
+
+    renderSubmissions();
+
+
+    showToast(
+      "Submission deleted.",
+      "success"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Delete error:",
+      error
+    );
+
+
+    showToast(
+      "Unable to delete submission.",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   INITIAL STATE
+   ============================================================ */
+
+showLogin();
+
+</script>
+
+</body>
+</html>
