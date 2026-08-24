@@ -1,54 +1,225 @@
 rules_version = '2';
 
 service cloud.firestore {
+
   match /databases/{database}/documents {
+
+    /* =========================================================
+       ADMIN
+       ========================================================= */
+
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == "shahinawab1814@gmail.com";
+      return request.auth != null
+        && request.auth.token.email == "shahinawab1814@gmail.com";
     }
+
+
+    /* =========================================================
+       PUBLIC POSTS
+       ========================================================= */
 
     match /publicPosts/{postId} {
-      allow read: if resource.data.status == "approved";
-      allow create: if request.resource.data.status == "approved"
+
+      /*
+       * Anyone can read public posts.
+       *
+       * Real name and email are NEVER stored here.
+       */
+      allow read: if true;
+
+
+      /*
+       * Anyone can create a public post.
+       *
+       * Only the allowed public fields are accepted.
+       */
+      allow create: if
+
+        request.resource.data.keys().hasOnly([
+          "postId",
+          "anonymousPersona",
+          "text",
+          "category",
+          "mood",
+          "createdAt",
+          "reactions",
+          "commentCount"
+        ])
+
+        && request.resource.data.postId == postId
+
+        && request.resource.data.anonymousPersona is string
+        && request.resource.data.anonymousPersona.size() > 0
+        && request.resource.data.anonymousPersona.size() <= 100
+
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 10000
+
         && request.resource.data.category is string
+        && request.resource.data.category.size() > 0
+        && request.resource.data.category.size() <= 100
+
         && request.resource.data.mood is string
-        && request.resource.data.theme is string;
-      allow update, delete: if isAdmin();
+        && request.resource.data.mood.size() > 0
+        && request.resource.data.mood.size() <= 100;
 
-      match /comments/{commentId} {
-        allow read: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved";
-        allow create: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved"
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 500;
-        allow update, delete: if isAdmin();
-      }
 
-      match /reactions/{reactionId} {
-        allow read: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved";
-        allow create: if get(/databases/$(database)/documents/publicPosts/$(postId)).data.status == "approved"
-          && request.resource.data.type in ["meToo", "love", "shocked", "fire"];
-        allow update, delete: if isAdmin();
-      }
+      /*
+       * Public users can update ONLY reaction counters.
+       *
+       * They cannot change the story, persona,
+       * category, mood or other fields.
+       */
+      allow update: if
+
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            "reactions"
+          ])
+
+        && request.resource.data.reactions is map
+
+        && request.resource.data.reactions.heart is int
+        && request.resource.data.reactions.support is int
+        && request.resource.data.reactions.sad is int
+
+        && request.resource.data.reactions.heart >= 0
+        && request.resource.data.reactions.support >= 0
+        && request.resource.data.reactions.sad >= 0;
+
+
+      /*
+       * Only the creator/admin can delete posts.
+       */
+      allow delete: if isAdmin();
     }
+
+
+    /* =========================================================
+       PRIVATE SUBMISSIONS
+       ========================================================= */
 
     match /privateSubmissions/{submissionId} {
-      allow create: if request.resource.data.postId == submissionId
+
+      /*
+       * A public user may create the private record
+       * associated with their public post.
+       *
+       * IMPORTANT:
+       * There is NO read permission for the public.
+       */
+      allow create: if
+
+        request.resource.data.keys().hasOnly([
+          "submissionId",
+          "postId",
+          "realName",
+          "email",
+          "text",
+          "category",
+          "mood",
+          "anonymousPersona",
+          "createdAt"
+        ])
+
+        && request.resource.data.submissionId == submissionId
+
+        && request.resource.data.postId == submissionId
+
         && request.resource.data.realName is string
         && request.resource.data.realName.size() > 0
-        && request.resource.data.realName.size() <= 200
+        && request.resource.data.realName.size() <= 120
+
         && request.resource.data.email is string
         && request.resource.data.email.size() > 3
-        && request.resource.data.email.size() <= 320
+        && request.resource.data.email.size() <= 180
+
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 10000
+
         && request.resource.data.category is string
         && request.resource.data.mood is string
-        && request.resource.data.theme is string;
-      allow read, update, delete: if isAdmin();
+
+        && request.resource.data.anonymousPersona is string;
+
+
+      /*
+       * ONLY the creator/admin can see:
+       *
+       * - real name
+       * - email
+       * - full story
+       * - category
+       * - mood
+       * - submission information
+       */
+      allow read: if isAdmin();
+
+
+      /*
+       * ONLY admin can modify/delete private submissions.
+       */
+      allow update, delete: if isAdmin();
     }
+
+
+    /* =========================================================
+       COMMENTS
+       ========================================================= */
+
+    match /comments/{commentId} {
+
+      /*
+       * Anyone can read anonymous comments.
+       */
+      allow read: if true;
+
+
+      /*
+       * Anyone can post an anonymous comment.
+       *
+       * No name or email is required.
+       */
+      allow create: if
+
+        request.resource.data.keys().hasOnly([
+          "postId",
+          "text",
+          "anonymousPersona",
+          "createdAt"
+        ])
+
+        && request.resource.data.postId is string
+        && request.resource.data.postId.size() > 0
+
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000
+
+        && request.resource.data.anonymousPersona == "Anonymous";
+
+
+      /*
+       * Only admin can modify/delete comments.
+       */
+      allow update, delete: if isAdmin();
+    }
+
+
+    /* =========================================================
+       EVERYTHING ELSE
+       ========================================================= */
+
+    match /{document=**} {
+
+      /*
+       * Deny access to every collection/document
+       * that hasn't explicitly been defined above.
+       */
+      allow read, write: if false;
+    }
+
   }
 }
